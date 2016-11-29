@@ -28,6 +28,8 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.sample.database.ContactDBHelper;
 
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("CommitPrefEdits")
@@ -50,15 +52,23 @@ public class MainActivity extends AppCompatActivity {
 
         prefsTwo.edit().putString("testTwoNew", "two").commit();
 
-        ContactDBHelper contactDBHelper = new ContactDBHelper(getApplicationContext());
-        if (contactDBHelper.count() == 0) {
-            for (int i = 0; i < 100; i++) {
-                String name = "name_" + i;
-                String phone = "phone_" + i;
-                String email = "email_" + i;
-                String street = "street_" + i;
-                String place = "place_" + i;
-                contactDBHelper.insertContact(name, phone, email, street, place);
+        String[] databases = new String[]{
+                "database1.db",
+                new File(getFilesDir(), "database2.db").getAbsolutePath(),
+                new File(new File(getFilesDir(), "folder"), "database3.db").getAbsolutePath()
+        };
+
+        for (int j = 0; j < databases.length; j++) {
+            ContactDBHelper contactDBHelper = new ContactDBHelper(getApplicationContext(), databases[j]);
+            if (contactDBHelper.count() == 0) {
+                for (int i = 0; i < 100; i++) {
+                    String name = "name_" + i;
+                    String phone = "phone_" + i;
+                    String email = "email_" + i;
+                    String street = "street_" + i;
+                    String place = "place_" + i;
+                    contactDBHelper.insertContact(name, phone, email, street, place, new File(databases[j]).getName());
+                }
             }
         }
     }

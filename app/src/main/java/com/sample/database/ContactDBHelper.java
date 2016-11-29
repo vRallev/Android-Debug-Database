@@ -33,7 +33,6 @@ import java.util.ArrayList;
  */
 public class ContactDBHelper extends SQLiteOpenHelper {
 
-    public static final String DATABASE_NAME = "Contact.db";
     public static final String CONTACTS_TABLE_NAME = "contacts";
     public static final String CONTACTS_COLUMN_ID = "id";
     public static final String CONTACTS_COLUMN_NAME = "name";
@@ -42,8 +41,8 @@ public class ContactDBHelper extends SQLiteOpenHelper {
     public static final String CONTACTS_COLUMN_CITY = "place";
     public static final String CONTACTS_COLUMN_PHONE = "phone";
 
-    public ContactDBHelper(Context context) {
-        super(context, DATABASE_NAME, null, 1);
+    public ContactDBHelper(Context context, String dbName) {
+        super(context, dbName, null, 1);
     }
 
     @Override
@@ -51,7 +50,7 @@ public class ContactDBHelper extends SQLiteOpenHelper {
         // TODO Auto-generated method stub
         db.execSQL(
                 "create table contacts " +
-                        "(id integer primary key, name text,phone text,email text, street text,place text)"
+                        "(id integer primary key, name text,phone text,email text, street text,place text, db text)"
         );
     }
 
@@ -62,7 +61,7 @@ public class ContactDBHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public boolean insertContact(String name, String phone, String email, String street, String place) {
+    public boolean insertContact(String name, String phone, String email, String street, String place, String dbName) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("name", name);
@@ -70,6 +69,7 @@ public class ContactDBHelper extends SQLiteOpenHelper {
         contentValues.put("email", email);
         contentValues.put("street", street);
         contentValues.put("place", place);
+        contentValues.put("db", dbName);
         db.insert("contacts", null, contentValues);
         return true;
     }

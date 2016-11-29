@@ -78,10 +78,11 @@ public class ClientServer implements Runnable {
     private ServerSocket mServerSocket;
 
 
-    private Context mContext;
+    private final Context mContext;
+    private final List<File> mDatabaseDirs;
+    private final Gson mGson;
+
     private SQLiteDatabase mDatabase;
-    private File mDatabaseDir;
-    private Gson mGson;
     private boolean isDbOpenned;
 
     /**
@@ -92,7 +93,11 @@ public class ClientServer implements Runnable {
         mAssets = context.getResources().getAssets();
         mContext = context;
         mGson = new Gson();
-        getDatabaseDir();
+
+        ArrayList<File> dirs = new ArrayList<>();
+        dirs.add(mContext.getFilesDir());
+        dirs.add(new File(mContext.getFilesDir().getParentFile(), "/databases"));
+        mDatabaseDirs = Collections.unmodifiableList(dirs);
     }
 
     /**
@@ -318,14 +323,11 @@ public class ClientServer implements Runnable {
         }
     }
 
-    private void getDatabaseDir() {
-        File root = mContext.getFilesDir().getParentFile();
-        File dbRoot = new File(root, "/databases");
-        mDatabaseDir = dbRoot;
-    }
-
     private void openDatabase(String database) {
-        mDatabase = mContext.openOrCreateDatabase(database, 0, null);
+        File file = findDatabase(database);
+        if (file != null) {
+            mDatabase = mContext.openOrCreateDatabase(file.getAbsolutePath(), 0, null);
+        }
         isDbOpenned = true;
     }
 
@@ -406,13 +408,51 @@ public class ClientServer implements Runnable {
         }
     }
 
+    private File findDatabase(String name) {
+        for (File databaseDir : mDatabaseDirs) {
+            File database = findDatabase(databaseDir, name);
+            if (database != null) {
+                return database;
+            }
+        }
+        return null;
+    }
+
+    private File findDatabase(File file, String name) {
+        if (file.isFile() && file.getName().endsWith(name)) {
+            return file;
+        }
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            for (File file1 : files) {
+                File result = findDatabase(file1, name);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void findDatabases(File dir, List<Object> paths) {
+        if (!dir.isDirectory()) {
+            return;
+        }
+
+        File[] files = dir.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                findDatabases(file, paths);
+            } else if (file.isFile() && file.getName().endsWith(".db")) {
+                paths.add(file.getName());
+            }
+        }
+    }
+
     public Response getDBList() {
         Response response = new Response();
-        if (mDatabaseDir != null && mDatabaseDir.list() != null) {
-            String[] list = mDatabaseDir.list();
-            if (list != null) {
-                Collections.addAll(response.rows, list);
-            }
+        for (File databaseDir : mDatabaseDirs) {
+            findDatabases(databaseDir, response.rows);
         }
         response.rows.add(Constants.APP_SHARED_PREFERENCES);
         response.isSuccessful = true;
@@ -421,7 +461,16 @@ public class ClientServer implements Runnable {
 
     public Response getAllTableName() {
         Response response = new Response();
-        Cursor c = mDatabase.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+        Cursor c;
+        try {
+            c = mDatabase.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Response msg = new Response();
+            msg.isSuccessful = false;
+            msg.error = e.getMessage();
+            return msg;
+        }
 
         if (c.moveToFirst()) {
             while (!c.isAfterLast()) {
