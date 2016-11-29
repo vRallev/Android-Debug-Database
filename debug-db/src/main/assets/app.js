@@ -110,7 +110,7 @@ function inflateData(result){
        $(".dataTables_scrollHeadInner").css({"width":"100%"});
        $(".table ").css({"width":"100%"});
    }else{
-      showErrorInfo();
+      showErrorInfo(result);
    }
 
 }
@@ -120,9 +120,10 @@ function showSuccessInfo(){
     $("#error-info").hide();
 }
 
-function showErrorInfo(){
+function showErrorInfo(result){
     $("#success-info").hide();
     $("#error-info").show();
+    document.getElementById("error-info").innerHTML=result.error;
 }
 
 function hideBothInfo(){
