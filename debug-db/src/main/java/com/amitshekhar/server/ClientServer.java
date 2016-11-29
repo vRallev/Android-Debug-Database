@@ -367,15 +367,18 @@ public class ClientServer implements Runnable {
             Response response = new Response();
             response.isSuccessful = true;
             List<String> columns = new ArrayList<>();
+            columns.add("Row");
             for (int i = 0; i < cursor.getColumnCount(); i++) {
                 String name = cursor.getColumnName(i);
                 columns.add(name);
             }
             response.columns = columns;
 
+            int rowNumber = 0;
             if (cursor.getCount() > 0) {
                 do {
                     List<Object> row = new ArrayList<>();
+                    row.add(++rowNumber);
                     for (int i = 0; i < cursor.getColumnCount(); i++) {
                         switch (cursor.getType(i)) {
                             case Cursor.FIELD_TYPE_BLOB:
