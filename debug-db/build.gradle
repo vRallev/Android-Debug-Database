@@ -19,6 +19,8 @@
 
 apply plugin: 'com.android.library'
 
+archivesBaseName = 'android-debug-db'
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -53,3 +55,18 @@ dependencies {
 }
 
 //apply from: 'debug-db-upload.gradle'
+
+/*
+ * rename the archive for the release build
+ */
+android.libraryVariants.all { variant ->
+    variant.outputs.each { output ->
+        File outputFile = output.outputFile
+        if (outputFile != null && outputFile.name.endsWith('.aar') && 'release'.equals(variant.buildType.name)) {
+            def fileName = "${archivesBaseName}-${version}.aar"
+            output.outputFile = new File(outputFile.parent, fileName)
+        }
+    }
+}
+
+apply from: 'gradle-maven-publish.gradle'

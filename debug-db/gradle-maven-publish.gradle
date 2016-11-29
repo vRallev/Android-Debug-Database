@@ -1,0 +1,132 @@
+apply plugin: 'maven-publish'
+
+group = 'com.evernote'
+version = '0.4.0'
+
+artifacts{
+  archives file("build/outputs/jar/${project.archivesBaseName}-${project.version}-sources.jar")
+  archives file("build/outputs/jar/${project.archivesBaseName}-${project.version}-javadoc.jar")
+}
+
+task initArtifactoryPomPath {
+    doLast {
+        artifactoryPublish {
+            mavenDescriptor = "build/${project.archivesBaseName}-${project.version}.pom"
+        }
+    }
+}
+
+model {
+    tasks.generatePomFileForMavenPublication {
+        destination = "build/${project.archivesBaseName}-${project.version}.pom"
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId project.archivesBaseName
+
+            artifact file("build/outputs/aar/${project.archivesBaseName}-${project.version}.aar")
+            artifact(file("build/outputs/jar/${project.archivesBaseName}-${project.version}-sources.jar")) {
+                classifier "sources"
+            }
+            artifact(file("build/outputs/jar/${project.archivesBaseName}-${project.version}-sources.jar")) {
+                classifier "javadoc"
+            }
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                configurations.compile.allDependencies.each {
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', it.group)
+                    dependencyNode.appendNode('artifactId', it.name)
+                    dependencyNode.appendNode('version', it.version)
+                    dependencyNode.appendNode('scope', 'compile')
+                }
+
+                configurations.provided.allDependencies.each {
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', it.group)
+                    dependencyNode.appendNode('artifactId', it.name)
+                    dependencyNode.appendNode('version', it.version)
+                    dependencyNode.appendNode('scope', 'provided')
+                }
+            }
+        }
+    }
+}
+
+project.tasks.whenTaskAdded { task ->
+    if (task.name == 'generatePomFileForMavenPublication') {
+        addSourcesAndJavadocTask task
+    }
+}
+
+def addSourcesAndJavadocTask(Task pomFileTask) {
+    android.libraryVariants.all { variant ->
+        if (variant.name.equalsIgnoreCase('release')) {
+            pomFileTask.dependsOn project.tasks.getByName("assemble${variant.name.capitalize()}")
+            pomFileTask.dependsOn project.tasks.getByName("generate${variant.name.capitalize()}JavadocJar")
+            pomFileTask.dependsOn project.tasks.getByName("generate${variant.name.capitalize()}SourcesJar")
+        }
+    }
+}
+
+// javadoc jar
+android.libraryVariants.all { variant ->
+    project.task("${variant.name.capitalize()}Javadoc", type: Javadoc) {
+        failOnError false
+
+        destinationDir = new File("$project.buildDir/javadoc/$variant.name")
+
+        source = variant.javaCompile.source
+
+        ext.androidJar = "${project.android.sdkDirectory}/platforms/${project.android.compileSdkVersion}/android.jar"
+        classpath += project.files(variant.javaCompile.classpath.files) + project.files(ext.androidJar)
+        classpath += files("build/generated/source/r/release/")
+
+        options {
+            linksOffline("http://d.android.com/reference", "${project.android.sdkDirectory}/docs/reference")
+            links("http://docs.oracle.com/javase/7/docs/api/");
+            setMemberLevel(JavadocMemberLevel.PACKAGE)
+            docEncoding = 'UTF-8'
+            encoding = 'UTF-8'
+            charSet = 'UTF-8'
+        }
+
+        exclude '**/BuildConfig.java'
+        exclude '**/R.java'
+    }
+
+    project.task("generate${variant.name.capitalize()}JavadocJar", type: Jar, dependsOn: "${variant.name.capitalize()}Javadoc") {
+        classifier 'javadoc'
+
+        description = 'Assembles a jar archive containing the generated Javadoc API documentation of $variant.name.'
+
+        destinationDir = new File("$project.buildDir/outputs/jar/")
+
+        exclude '**/BuildConfig.class'
+        exclude '**/R.class'
+
+        from "$project.buildDir/javadoc/$variant.name"
+    }
+}
+
+// sources jar
+android.libraryVariants.all { variant ->
+    project.task("generate${variant.name.capitalize()}SourcesJar", type: Jar) {
+        classifier = 'sources'
+
+        description = 'Assembles a jar archive containing the main sources of $variant.name..'
+
+        destinationDir = new File("$project.buildDir/outputs/jar/")
+
+        // exclude generated files
+        exclude '**/BuildConfig.java'
+        exclude '**/R.java'
+
+        from variant.javaCompile.source
+    }
+}
