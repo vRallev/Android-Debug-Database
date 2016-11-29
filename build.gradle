@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 /*
  *
  *  *    Copyright (C) 2016 Amit Shekhar
@@ -51,4 +53,17 @@ ext {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+task('accessDb') {
+    doLast {
+        String devices = 'adb devices'.execute().inputStream.getText("UTF-8")
+        if (devices.contains("emulator")) {
+            if ('adb forward tcp:8081 tcp:8081'.execute().waitFor(1, TimeUnit.SECONDS)) {
+                println 'forwarded traffic on port 8081'
+            }
+        } else {
+            println 'no emulator detected'
+        }
+    }
 }
