@@ -47,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPreferences.edit().putString("testOne", "one").commit();
         sharedPreferences.edit().putString("testTwo", "two").commit();
+        sharedPreferences.edit().putFloat("float", Float.MAX_VALUE).commit();
+        sharedPreferences.edit().putLong("long", Long.MAX_VALUE).commit();
+        sharedPreferences.edit().putInt("integer", Integer.MAX_VALUE).commit();
 
         prefsOne.edit().putString("testOneNew", "one").commit();
 
@@ -67,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
                     String email = "email_" + i;
                     String street = "street_" + i;
                     String place = "place_" + i;
-                    contactDBHelper.insertContact(name, phone, email, street, place, new File(databases[j]).getName());
+                    contactDBHelper.insertContact(name, phone, Long.MAX_VALUE, Double.POSITIVE_INFINITY, new File(databases[j]).getName());
                 }
             }
         }

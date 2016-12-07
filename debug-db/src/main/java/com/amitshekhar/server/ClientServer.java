@@ -385,7 +385,14 @@ public class ClientServer implements Runnable {
                                 row.add(cursor.getBlob(i));
                                 break;
                             case Cursor.FIELD_TYPE_FLOAT:
-                                row.add(cursor.getFloat(i));
+                                float floatValue = cursor.getFloat(i);
+                                if (Float.isInfinite(floatValue)) {
+                                    row.add("INFINITE");
+                                } else if (Float.isNaN(floatValue)) {
+                                    row.add("NaN");
+                                } else {
+                                    row.add(floatValue);
+                                }
                                 break;
                             case Cursor.FIELD_TYPE_INTEGER:
                                 row.add(cursor.getInt(i));
