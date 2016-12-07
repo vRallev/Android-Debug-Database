@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
 
         prefsTwo.edit().putString("testTwoNew", "two").commit();
 
+        new File(getCacheDir(), "test").mkdirs();
+
         String[] databases = new String[]{
                 "database1.db",
                 new File(getFilesDir(), "database2.db").getAbsolutePath(),

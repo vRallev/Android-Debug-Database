@@ -30,4 +30,5 @@ public final class Constants {
     }
 
     public static final String APP_SHARED_PREFERENCES = "APP_SHARED_PREFERENCES";
+    public static final String APP_ALL_FILES = "APP_ALL_FILES";
 }

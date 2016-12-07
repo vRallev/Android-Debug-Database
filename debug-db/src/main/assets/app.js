@@ -104,7 +104,24 @@ function inflateData(result){
            'bInfo': true,
            "bSort" : true,
            "scrollX": true,
-           "iDisplayLength": 10
+           "iDisplayLength": 10,
+           "columnDefs": [
+                       {
+                           // The `data` parameter refers to the data for the cell (defined by the
+                           // `data` option, which defaults to the column being worked with, in
+                           // this case `data: 0`.
+                           "render": function ( data, type, row ) {
+
+                               if (data.startsWith("/data")) {
+                                   return "<a href='/download" + data + "'>" + data + "</a>";
+                               } else {
+                                   return data;
+                               }
+                           },
+                           "targets": 0
+                       },
+                       { "visible": true,  "targets": [ 0 ] }
+                   ]
        });
        // hack to fix alignment issue when scrollX is enabled
        $(".dataTables_scrollHeadInner").css({"width":"100%"});

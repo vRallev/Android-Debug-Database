@@ -34,6 +34,7 @@ import android.util.Log;
 
 import com.amitshekhar.model.Response;
 import com.amitshekhar.utils.Constants;
+import com.amitshekhar.utils.FileUtils;
 import com.amitshekhar.utils.PrefUtils;
 import com.google.gson.Gson;
 
@@ -184,6 +185,10 @@ public class ClientServer implements Runnable {
                 if (isDbOpenned) {
                     String sql = "SELECT * FROM " + query;
                     response = query(sql);
+
+                } else if (query != null && query.startsWith("/")) {
+                    response = getAllFiles(query);
+
                 } else {
                     response = getAllPrefData(query);
                 }
@@ -231,6 +236,9 @@ public class ClientServer implements Runnable {
                 if (Constants.APP_SHARED_PREFERENCES.equals(database)) {
                     response = getAllPrefTableName();
                     closeDatabase();
+                } else if (Constants.APP_ALL_FILES.equals(database)) {
+                    response = getAllFilesTableName();
+                    closeDatabase();
                 } else {
                     openDatabase(database);
                     response = getAllTableName();
@@ -238,6 +246,9 @@ public class ClientServer implements Runnable {
 
                 String data = mGson.toJson(response);
                 bytes = data.getBytes();
+            } else if (route.startsWith("download")) {
+                bytes = FileUtils.readFile(route.substring("download".length()));
+
             } else {
                 bytes = loadContent(route);
             }
@@ -465,6 +476,7 @@ public class ClientServer implements Runnable {
             findDatabases(databaseDir, response.rows);
         }
         response.rows.add(Constants.APP_SHARED_PREFERENCES);
+        response.rows.add(Constants.APP_ALL_FILES);
         response.isSuccessful = true;
         return response;
     }
@@ -504,6 +516,16 @@ public class ClientServer implements Runnable {
         return response;
     }
 
+    public Response getAllFilesTableName() {
+        Response response = new Response();
+        List<String> dirs = FileUtils.getAllDirs(mContext);
+        for (String dir : dirs) {
+            response.rows.add(dir);
+        }
+        response.isSuccessful = true;
+        return response;
+    }
+
     public Response getAllPrefData(String tag) {
         Response response = new Response();
         response.isSuccessful = true;
@@ -516,6 +538,19 @@ public class ClientServer implements Runnable {
             row.add(entry.getKey());
             row.add(entry.getValue().toString());
             response.rows.add(row);
+        }
+        return response;
+    }
+
+    public Response getAllFiles(String dirName) {
+        Response response = new Response();
+        response.isSuccessful = true;
+        response.columns.add("File");
+
+        File dir = new File(mContext.getFilesDir().getParentFile(), dirName.substring(1));
+        List<String> files = FileUtils.getAllFiles(dir);
+        for (String file : files) {
+            response.rows.add(Collections.singletonList(file));
         }
         return response;
     }
